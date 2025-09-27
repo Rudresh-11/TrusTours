@@ -19,6 +19,11 @@ const userSchema = new Schema(
             lowecase: true,
             trim: true, 
         },
+        contactNumber: {
+            type: Number,
+            required: true,
+            unique: true,
+        },
         fullName: {
             type: String,
             required: true,
@@ -27,15 +32,12 @@ const userSchema = new Schema(
         },
         avatar: {
             type: String, // cloudinary url
-            required: true,
+            default: null
         },
-        coverImage: {
-            type: String, // cloudinary url
-        },
-        watchHistory: [
+        commentsPosted: [
             {
                 type: Schema.Types.ObjectId,
-                ref: "Video"
+                ref: "Comment",
             }
         ],
         password: {
