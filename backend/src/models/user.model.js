@@ -1,6 +1,30 @@
-import mongoose, {Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
+import { type } from "os";
+
+const placesWithDescriptionSchema = new Schema({
+    placeName: { type: String, required: true },
+    placeImageUrl: {type : String},
+    description: { type: String, required: true }
+}, { timestamps: false, _id: false })
+
+const savedTripsSchema = new Schema(
+    {
+        tripName: { type: String, required: true },
+        days: { type: Number, required: true },
+        startDate: { type: Date, required: true },
+        placesWithDescription: { type: [placesWithDescriptionSchema] },
+        budget: { type: Number, required: true }
+    }, { timestamps: true }
+)
+
+savedTripsSchema.virtual("endDate").get(function () {
+    if (!this.startDate || !this.days) return null;
+    const end = new Date(this.startDate);
+    end.setDate(end.getDate() + this.days - 1)
+    return end
+})
 
 const userSchema = new Schema(
     {
@@ -9,7 +33,7 @@ const userSchema = new Schema(
             required: true,
             unique: true,
             lowercase: true,
-            trim: true, 
+            trim: true,
             index: true
         },
         email: {
@@ -17,7 +41,7 @@ const userSchema = new Schema(
             required: true,
             unique: true,
             lowecase: true,
-            trim: true, 
+            trim: true,
         },
         contactNumber: {
             type: Number,
@@ -27,7 +51,7 @@ const userSchema = new Schema(
         fullName: {
             type: String,
             required: true,
-            trim: true, 
+            trim: true,
             index: true
         },
         avatar: {
@@ -40,6 +64,10 @@ const userSchema = new Schema(
                 ref: "Comment",
             }
         ],
+        savedTrips: { 
+            type: [savedTripsSchema], 
+            default: [] 
+        },
         password: {
             type: String,
             required: [true, 'Password is required']
@@ -55,17 +83,17 @@ const userSchema = new Schema(
 )
 
 userSchema.pre("save", async function (next) {
-    if(!this.isModified("password")) return next();
+    if (!this.isModified("password")) return next();
 
     this.password = await bcrypt.hash(this.password, 10)
     next()
 })
 
-userSchema.methods.isPasswordCorrect = async function(password){
+userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password)
 }
 
-userSchema.methods.generateAccessToken = function(){
+userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
             _id: this._id,
@@ -79,11 +107,11 @@ userSchema.methods.generateAccessToken = function(){
         }
     )
 }
-userSchema.methods.generateRefreshToken = function(){
+userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
             _id: this._id,
-            
+
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
